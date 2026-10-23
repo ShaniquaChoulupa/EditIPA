@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EditIPA - iOS App Package Editor</title>
+
+<!-- Fonts & Libraries -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,700&display=swap" rel="stylesheet">
+
+<!-- JSZip library for browser-side IPA (zip) unarchiving and repacking -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  :root {
+    --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --neon-pink: #ff007f;
+    --neon-purple: #7928ca;
+    --neon-cyan: #00f2fe;
+    --neon-blue: #4facfe;
+    --neon-yellow: #ffe600;
+    --card-bg: rgba(20, 15, 38, 0.55);
+    --card-border: rgba(255, 255, 255, 0.22);
+    --input-bg: rgba(255, 255, 255, 0.08);
+    --input-border: rgba(255, 255, 255, 0.2);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-family);
+    min-height: 100vh;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1rem;
+    background: #090514;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Flowing Rainbow Animated Mesh Background */
+  .mesh-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    background: radial-gradient(circle at 10% 20%, rgba(255, 0, 127, 0.35) 0%, transparent 40%),
+                radial-gradient(circle at 90% 15%, rgba(121, 40, 202, 0.45) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 85% 85%, rgba(255, 230, 0, 0.25) 0%, transparent 40%),
+                radial-gradient(circle at 15% 85%, rgba(255, 0, 127, 0.3) 0%, transparent 45%);
+    filter: blur(40px);
+    animation: meshPulse 12s ease-in-out infinite alternate;
+  }
+
+  @keyframes meshPulse {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(2deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  /* Floating Colorful Orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    opacity: 0.65;
+    animation: floatOrb 10s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .orb-1 { width: 320px; height: 320px; background: var(--neon-pink); top: 10%; left: 5%; animation-duration: 8s; }
+  .orb-2 { width: 380px; height: 380px; background: var(--neon-cyan); bottom: 10%; right: 5%; animation-duration: 12s; }
+  .orb-3 { width: 260px; height: 260px; background: var(--neon-yellow); top: 45%; left: 80%; animation-duration: 9s; }
+
+  @keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(40px, -50px) scale(1.15); }
+  }
+
+  main {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    z-index: 1;
+  }
+
+  /* Header Card */
+  .hero-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--card-border);
+    padding: 2.8rem 2rem;
+    border-radius: 32px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-yellow), var(--neon-purple));
+    background-size: 300% 100%;
+    animation: gradientMove 4s linear infinite;
+  }
+
+  @keyframes gradientMove {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 300% 0%; }
+  }
+
+  h1.title-effect {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--neon-yellow) 30%, var(--neon-pink) 65%, var(--neon-cyan) 100%);
+    background-size: 250% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shineTitle 6s linear infinite;
+    margin-bottom: 0.8rem;
+    filter: drop-shadow(0 8px 25px rgba(255, 0, 127, 0.4));
+  }
+
+  @keyframes shineTitle {
+    to { background-position: 250% center; }
+  }
+
+  .subtitle {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+  }
+
+  /* Dropzone Section */
+  .dropzone {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2.5px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 28px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--neon-cyan);
+    background: rgba(0, 242, 254, 0.12);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 15px 35px rgba(0, 242, 254, 0.3);
+  }
+
+  .upload-icon {
+    width: 64px;
+    height: 64px;
+    fill: var(--neon-cyan);
+    filter: drop-shadow(0 0 12px var(--neon-cyan));
+    transition: transform 0.3s ease;
+  }
+
+  .dropzone:hover .upload-icon {
+    transform: translateY(-6px) scale(1.1);
+    fill: var(--neon-pink);
+    filter: drop-shadow(0 0 15px var(--neon-pink));
+  }
+
+  .btn {
+    background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 50%, var(--neon-cyan) 100%);
+    background-size: 200% auto;
+    color: #fff;
+    border: none;
+    padding: 1.1rem 2.8rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0
